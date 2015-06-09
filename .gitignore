@@ -6,3 +6,4 @@ samples
 
 .project
 .classpath
+.DS*
