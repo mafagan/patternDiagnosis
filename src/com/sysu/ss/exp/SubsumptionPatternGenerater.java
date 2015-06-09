@@ -202,7 +202,7 @@ public class SubsumptionPatternGenerater {
 		
 		for (int i = 0; i < pattenList.size(); i++) {
 			for (int j = i+1; j < pattenList.size(); j++) {
-				System.out.println("Comparing:\n" + pattenList.get(i) + "\n" + pattenList.get(j) );
+				System.out.println("Comparing" + i + " " + j + " (" + pattenList.size()+ ") "+ ":\n" + pattenList.get(i) + "\n" + pattenList.get(j) );
 				if (this.isExplanationRoutineEqual(pattenList.get(i), pattenList.get(j))) {
 					System.out.println("Equal\n");
 					if (resMap.containsKey(pattenList.get(i))) {
