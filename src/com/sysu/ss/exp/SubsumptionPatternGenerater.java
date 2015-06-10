@@ -58,11 +58,22 @@ public class SubsumptionPatternGenerater {
 	
 	private File outputFile;
 	
+	private Map<String, Integer> primeMap;
+	
 	private HashMap<OWLClass, HashSet<OWLClass>> classHierarchyMap = new HashMap<OWLClass, HashSet<OWLClass>>();;
 	
 	public SubsumptionPatternGenerater(String path, String outFilePath){
 		ontoFile = new File(path);
 		outputFile = new File(outFilePath);
+		
+		primeMap.put(AxiomGCI0.class.toString(), 2);
+		primeMap.put(AxiomGCI1.class.toString(), 3);
+		primeMap.put(AxiomGCI2.class.toString(), 5);
+		primeMap.put(AxiomGCI3.class.toString(), 7);
+		primeMap.put(AxiomR.class.toString(), 11);
+		primeMap.put(AxiomRI2.class.toString(), 13);
+		primeMap.put(AxiomRI3.class.toString(), 17);
+		primeMap.put(AxiomS.class.toString(), 19);
 	}
 	
 	public void generate() throws OWLOntologyCreationException, OWLOntologyStorageException{
@@ -145,6 +156,7 @@ public class SubsumptionPatternGenerater {
 		
 		Iterator<Integer> elementIterator = elements.iterator();
 		
+		Map<Integer, Set<ExplanationRoutine>> expPrimeHashMap = new HashMap<Integer, Set<ExplanationRoutine>>();
 		//System.out.println(elements);
 		System.out.println("\nJustifications:\n");
 		while (elementIterator.hasNext()) {
