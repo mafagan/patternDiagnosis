@@ -41,8 +41,10 @@ public class main {
 	 * @throws OWLOntologyStorageException 
 	 */
 	public static void main(String[] args) throws OWLOntologyCreationException, OWLOntologyStorageException {
-		SubsumptionPatternGenerater patternGenerater = new SubsumptionPatternGenerater(PATH + FILE, PATH + RES);
-		patternGenerater.generate();
+//		SubsumptionPatternGenerater patternGenerater = new SubsumptionPatternGenerater(PATH + FILE, PATH + RES);
+//		patternGenerater.generate();
+		PatternDiagnosis patDia = new PatternDiagnosis(null, null, null);
+		patDia.generate();
 	}
 
 }
