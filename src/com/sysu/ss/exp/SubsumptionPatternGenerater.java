@@ -66,6 +66,7 @@ public class SubsumptionPatternGenerater {
 		ontoFile = new File(path);
 		outputFile = new File(outFilePath);
 		
+		primeMap = new HashMap<String, Integer>();
 		primeMap.put(AxiomGCI0.class.toString(), 2);
 		primeMap.put(AxiomGCI1.class.toString(), 3);
 		primeMap.put(AxiomGCI2.class.toString(), 5);

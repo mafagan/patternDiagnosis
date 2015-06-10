@@ -11,9 +11,11 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLDataFactory;
+import org.semanticweb.owlapi.model.OWLObjectIntersectionOf;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 
 public class PatternDiagnosis {
@@ -43,19 +45,21 @@ public class PatternDiagnosis {
 		
 		Iterator<OWLAxiom> it = axiomSet.iterator();
 		
-		OWLAxiom axiom = it.next();
-		tt.println(axiom);
+		OWLSubClassOfAxiom axiom = (OWLSubClassOfAxiom)it.next();
+		OWLObjectIntersectionOf obAxiom = (OWLObjectIntersectionOf) axiom.getSubClass();
+		tt.println(obAxiom.getOperands());
+		tt.println(axiom.getSuperClass());
 
 		//tt.println(axiom.getNestedClassExpressions());
 		Set<OWLClassExpression> tmpClassExpression =  axiom.getNestedClassExpressions();
 		
-		tt.println("\nexpression begin:");
-		Iterator<OWLClassExpression> iterator = tmpClassExpression.iterator();
-		while (iterator.hasNext()) {
-			OWLClassExpression tmp = iterator.next();
-			tt.println(tmp);
-		}
-		tt.println("expression end:\n");
+//		tt.println("\nexpression begin:");
+//		Iterator<OWLClassExpression> iterator = tmpClassExpression.iterator();
+//		while (iterator.hasNext()) {
+//			OWLClassExpression tmp = iterator.next();
+//			tt.println();
+//		}
+//		tt.println("expression end:\n");
 
 		//tt.println(axiomSet);
 	}
