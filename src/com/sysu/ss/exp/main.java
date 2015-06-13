@@ -32,7 +32,7 @@ public class main {
 	 */
 	private static String PATH = "ontology/";
 	
-	private static String FILE = "big0.owl";
+	private static String FILE = "big.owl";
 	
 	private static String RES = "res.txt";
 	/**

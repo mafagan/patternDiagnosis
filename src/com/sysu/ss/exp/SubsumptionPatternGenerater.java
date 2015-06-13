@@ -160,6 +160,9 @@ public class SubsumptionPatternGenerater {
 		Map<Integer, Set<ExplanationRoutine>> expPrimeHashMap = new HashMap<Integer, Set<ExplanationRoutine>>();
 		//System.out.println(elements);
 		System.out.println("\nJustifications:\n");
+		
+		Map<ExplanationRoutine, Integer> resMap = new HashMap<ExplanationRoutine, Integer>();
+		
 		while (elementIterator.hasNext()) {
 			Integer curElement = elementIterator.next();
 			/*
@@ -170,6 +173,7 @@ public class SubsumptionPatternGenerater {
 			
 			//System.out.println(curElement + "\n" + superCollection + "\n");
 			Iterator<Integer> superIterator = superCollection.iterator();
+			
 			
 			while (superIterator.hasNext()) {
 				Integer superInteger = superIterator.next();
@@ -188,87 +192,123 @@ public class SubsumptionPatternGenerater {
 				Iterator<ExplanationRoutine> subsumIterator = tempSet.iterator();
 				
 				while(subsumIterator.hasNext()){
-					System.out.println(subsumIterator.next());
+					// Compare to the existing patterns
+					ExplanationRoutine curExplanationRoutine = subsumIterator.next();
+					
+					Iterator<ExplanationRoutine> resMapIterator = resMap.keySet().iterator();
+					
+					boolean newPattern = true;
+					
+					while (resMapIterator.hasNext()) {
+						ExplanationRoutine tmpExplanationRoutine = resMapIterator.next();
+						if (isExplanationRoutineEqual(tmpExplanationRoutine, curExplanationRoutine)) {
+							resMap.put(tmpExplanationRoutine, resMap.get(tmpExplanationRoutine)+1);
+							newPattern = false;
+							break;
+						}
+					}
+					
+					if (newPattern) {
+						resMap.put(curExplanationRoutine, 1);
+					}
+					System.out.println(curExplanationRoutine);
 				}
+				
+				try {
+					FileWriter writer = new FileWriter(outputFile, false);
+					Iterator<ExplanationRoutine> resMapIterator = resMap.keySet().iterator();
+					while (resMapIterator.hasNext()) {
+						ExplanationRoutine mapKey = resMapIterator.next();
+						
+						//System.out.println();
+						
+						writer.write(mapKey + ": " + resMap.get(mapKey) + "\n");
+					}
+					writer.close();
+				} catch (Exception e) {
+					// TODO: handle exception
+					e.printStackTrace();
+				}
+				
 				System.out.print("\n");
 				
-				patternSet.addAll(tempSet);
+				//patternSet.addAll(tempSet);
 			}
 		}
 		
-		System.out.println("\nCandidate patterns:\n");
-		Iterator patternIterator = patternSet.iterator();
-		while (patternIterator.hasNext()) {
-			ExplanationRoutine exp = (ExplanationRoutine) patternIterator.next();
-			//System.out.println(exp.getClass().toString());
-			System.out.println(exp + "\n");
-			
-		}
+//		System.out.println("\nCandidate patterns:\n");
+//		Iterator patternIterator = patternSet.iterator();
+//		while (patternIterator.hasNext()) {
+//			ExplanationRoutine exp = (ExplanationRoutine) patternIterator.next();
+//			//System.out.println(exp.getClass().toString());
+//			System.out.println(exp + "\n");
+//			
+//		}
 		
 		/*
 		 *  ExplanationRoutine: candidate pattern
 		 *  Integer: pattern count
 		 */
-		Map<ExplanationRoutine, Integer> resMap = new HashMap<ExplanationRoutine, Integer>();
-		
-		List<ExplanationRoutine> pattenList = new ArrayList<ExplanationRoutine>(patternSet);
-		
-		for (int i = 0; i < pattenList.size(); i++) {
-			for (int j = i+1; j < pattenList.size(); j++) {
-				System.out.println("Comparing " + i + " " + j + " (" + pattenList.size()+ ") "+ ":\n" + pattenList.get(i) + "\n" + pattenList.get(j) );
-				if (this.isExplanationRoutineEqual(pattenList.get(i), pattenList.get(j))) {
-					System.out.println("Equal\n");
-					if (resMap.containsKey(pattenList.get(i))) {
-						resMap.put(pattenList.get(i), resMap.get(pattenList.get(i))+1);
-
-						pattenList.remove(j);
-						j = j - 1;
-					}else {
-						resMap.put(pattenList.get(i), 2);
-						pattenList.remove(j);
-						j = j - 1;
-					}
-				}else {
-					System.out.println("Not equal:\n");
-					if (!resMap.containsKey(pattenList.get(i))) {
-						resMap.put(pattenList.get(i), 1);
-					}
-					
-				}
-				
-			}
-		}
-		
-		/*
-		 * Do not miss the last element
-		 * 
-		 */
-		if (!resMap.containsKey(pattenList.get(pattenList.size()-1))) {
-			resMap.put(pattenList.get(pattenList.size()-1), 1);
-		}
+//		Map<ExplanationRoutine, Integer> resMap = new HashMap<ExplanationRoutine, Integer>();
+//		
+//		List<ExplanationRoutine> pattenList = new ArrayList<ExplanationRoutine>(patternSet);
+//		
+//		for (int i = 0; i < pattenList.size(); i++) {
+//			for (int j = i+1; j < pattenList.size(); j++) {
+//				System.out.println("Comparing " + i + " " + j + " (" + pattenList.size()+ ") "+ ":\n" + pattenList.get(i) + "\n" + pattenList.get(j) );
+//				if (this.isExplanationRoutineEqual(pattenList.get(i), pattenList.get(j))) {
+//					System.out.println("Equal\n");
+//					if (resMap.containsKey(pattenList.get(i))) {
+//						resMap.put(pattenList.get(i), resMap.get(pattenList.get(i))+1);
+//
+//						pattenList.remove(j);
+//						j = j - 1;
+//					}else {
+//						resMap.put(pattenList.get(i), 2);
+//						pattenList.remove(j);
+//						j = j - 1;
+//					}
+//				}else {
+//					System.out.println("Not equal:\n");
+//					if (!resMap.containsKey(pattenList.get(i))) {
+//						resMap.put(pattenList.get(i), 1);
+//					}
+//					
+//				}
+//				
+//			}
+//		}
+//		
+//		/*
+//		 * Do not miss the last element
+//		 * 
+//		 */
+//		if (!resMap.containsKey(pattenList.get(pattenList.size()-1))) {
+//			resMap.put(pattenList.get(pattenList.size()-1), 1);
+//		}
 		
 		//System.out.println("\nResult pattern supports:");
 		
-		try {
-			FileWriter writer = new FileWriter(outputFile, true);
-			Iterator<ExplanationRoutine> resMapIterator = resMap.keySet().iterator();
-			while (resMapIterator.hasNext()) {
-				ExplanationRoutine mapKey = resMapIterator.next();
-				
-				//System.out.println();
-				
-				writer.write(mapKey + ": " + resMap.get(mapKey) + "\n");
-			}
-			writer.close();
-		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
-		}
+//		try {
+//			FileWriter writer = new FileWriter(outputFile, true);
+//			Iterator<ExplanationRoutine> resMapIterator = resMap.keySet().iterator();
+//			while (resMapIterator.hasNext()) {
+//				ExplanationRoutine mapKey = resMapIterator.next();
+//				
+//				//System.out.println();
+//				
+//				writer.write(mapKey + ": " + resMap.get(mapKey) + "\n");
+//			}
+//			writer.close();
+//		} catch (Exception e) {
+//			// TODO: handle exception
+//			e.printStackTrace();
+//		}
 		
 	}
 	
 	public Set<ExplanationRoutine> getJustification(MyAxiomRepository repository, Integer subClass, Integer superClass){
-		MasterRoutine masterRoutine = new MasterRoutine(repository, 2, subClass, superClass);
+		MasterRoutine masterRoutine = new MasterRoutine(repository, 1, subClass, superClass);
 		
 		masterRoutine.computeResult();
 		
@@ -346,6 +386,7 @@ public class SubsumptionPatternGenerater {
 		
 		
 		return domainPermutation(0, similarPattern);
+		
 	}
 	
 	
