@@ -32,7 +32,7 @@ public class main {
 	 */
 	private static String PATH = "ontology/";
 	
-	private static String FILE = "big.owl";
+	private static String FILE = "3ont.owl";
 	
 	private static String RES = "res.txt";
 	/**
@@ -42,8 +42,13 @@ public class main {
 	 */
 	public static void main(String[] args) throws OWLOntologyCreationException, OWLOntologyStorageException {
 		SubsumptionPatternGenerater patternGenerater = new SubsumptionPatternGenerater(PATH + FILE, PATH + RES);
-		patternGenerater.generate();
-//		PatternDiagnosis patDia = new PatternDiagnosis(null, null, null);
+		patternGenerater.nomalizeTest();
+//		patternGenerater.generate();
+		
+//		OWLOntologyManager inputOntologyManager = OWLManager.createOWLOntologyManager();
+//		OWLOntology ont = inputOntologyManager.loadOntologyFromOntologyDocument(new File(PATH+FILE));
+//
+//		PatternDiagnosis patDia = new PatternDiagnosis(new File(PATH+FILE), null, null);
 //		patDia.generate();
 	}
 

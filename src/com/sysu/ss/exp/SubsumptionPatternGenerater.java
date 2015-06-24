@@ -37,6 +37,8 @@ import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLDataFactory;
+import org.semanticweb.owlapi.model.OWLObject;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
@@ -51,6 +53,7 @@ import org.semanticweb.owlapi.util.InferredSubClassAxiomGenerator;
 
 
 import de.tudresden.inf.lat.jcel.core.graph.IntegerSubsumerGraph;
+import de.tudresden.inf.lat.jcel.coreontology.axiom.NormalizedIntegerAxiom;
 
 public class SubsumptionPatternGenerater {
 	
@@ -535,6 +538,40 @@ public class SubsumptionPatternGenerater {
 			}
 		}
 		return false;
+	}
+	
+	public void nomalizeTest(){
+		RuleBasedCELReasoner celReasoner = new RuleBasedCELReasoner(ontoFile);
+		celReasoner.doInference();
+		
+		Map<Integer, OWLClass> classMap = celReasoner.getClassMap();
+		Map<Integer, OWLObjectProperty> propMap = celReasoner.getObjectPropertyMap();
+		
+		Iterator<Integer> classMapIterator = classMap.keySet().iterator();
+		while (classMapIterator.hasNext()) {
+			Integer keyInteger = classMapIterator.next();
+			System.out.println(keyInteger + " " + classMap.get(keyInteger));
+		}
+		
+		Iterator<Integer> propMapIterator = propMap.keySet().iterator();
+		while (propMapIterator.hasNext()) {
+			Integer keyInteger = propMapIterator.next();
+			System.out.println(keyInteger + " " + propMap.get(keyInteger));
+
+		}
+		MyAxiomRepository repository = new MyAxiomRepository(celReasoner.getClassGraph(), celReasoner.getRelationSet(), celReasoner.getNormalizedIntegerAxiomSet());
+		repository.createIndex();
+		
+		Set<ExplanationRoutine> tempSet = getJustification(repository, 7, 9);
+		System.out.println("\n" + tempSet + "\n");
+		
+//		System.out.print(celReasoner.getNormalizedIntegerAxiomSet());
+		Set<NormalizedIntegerAxiom> tAxiom = celReasoner.getNormalizedIntegerAxiomSet();
+		Iterator<NormalizedIntegerAxiom> iterator = tAxiom.iterator();
+		
+		while (iterator.hasNext()) {
+			System.out.println(iterator.next());
+		}
 	}
 }
 
