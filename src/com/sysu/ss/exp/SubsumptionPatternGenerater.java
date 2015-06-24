@@ -1,11 +1,8 @@
 package com.sysu.ss.exp;
 
-import java.awt.geom.Path2D;
 import java.io.File;
-import java.io.FileWriter;
-import java.text.SimpleDateFormat;
+import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -13,547 +10,245 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import kse.findj.edg.core.ExplanationRoutine;
-import kse.findj.edg.core.MasterRoutine;
 import kse.findj.edg.data.AxiomGCI0;
 import kse.findj.edg.data.AxiomGCI1;
 import kse.findj.edg.data.AxiomGCI2;
 import kse.findj.edg.data.AxiomGCI3;
 import kse.findj.edg.data.AxiomR;
 import kse.findj.edg.data.AxiomRI2;
-import kse.findj.edg.data.AxiomRI3;
 import kse.findj.edg.data.AxiomS;
 import kse.findj.edg.data.MyAxiom;
-import kse.findj.edg.data.MyAxiomRepository;
 import kse.findj.reasoner.RuleBasedCELReasoner;
 
-import org.apache.log4j.PatternLayout;
-import org.hamcrest.core.Is;
-import org.omg.Messaging.SYNC_WITH_TRANSPORT;
-import org.semanticweb.elk.owlapi.ElkReasonerFactory;
+import org.coode.owlapi.manchesterowlsyntax.OntologyAxiomPair;
 import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.io.OWLFunctionalSyntaxOntologyFormat;
-import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAxiom;
-import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLDataFactory;
+import org.semanticweb.owlapi.model.OWLObjectIntersectionOf;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
-import org.semanticweb.owlapi.model.OWLOntologyStorageException;
 import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
-import org.semanticweb.owlapi.reasoner.InferenceType;
-import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
-import org.semanticweb.owlapi.util.InferredAxiomGenerator;
-import org.semanticweb.owlapi.util.InferredOntologyGenerator;
-import org.semanticweb.owlapi.util.InferredSubClassAxiomGenerator;
 
+import com.sun.org.apache.xalan.internal.xsltc.compiler.Template;
 
-import de.tudresden.inf.lat.jcel.core.graph.IntegerSubsumerGraph;
+import de.tudresden.inf.lat.jcel.coreontology.axiom.GCI0Axiom;
+import de.tudresden.inf.lat.jcel.coreontology.axiom.GCI1Axiom;
+import de.tudresden.inf.lat.jcel.coreontology.axiom.GCI2Axiom;
+import de.tudresden.inf.lat.jcel.coreontology.axiom.GCI3Axiom;
+import de.tudresden.inf.lat.jcel.coreontology.axiom.NormalizedIntegerAxiom;
+import de.tudresden.inf.lat.jcel.coreontology.axiom.RI1Axiom;
+import de.tudresden.inf.lat.jcel.coreontology.axiom.RI2Axiom;
+import de.tudresden.inf.lat.jcel.coreontology.axiom.RI3Axiom;
+import de.tudresden.inf.lat.jcel.coreontology.axiom.RangeAxiom;
+import de.tudresden.inf.lat.jcel.owlapi.main.JcelReasoner;
 
-public class SubsumptionPatternGenerater {
-	
-	private File ontoFile;
-	
-	private File outputFile;
-	
-	private Map<String, Integer> primeMap;
-	
-	private HashMap<OWLClass, HashSet<OWLClass>> classHierarchyMap = new HashMap<OWLClass, HashSet<OWLClass>>();;
-	
-	public SubsumptionPatternGenerater(String path, String outFilePath){
-		ontoFile = new File(path);
-		outputFile = new File(outFilePath);
-		
-		primeMap = new HashMap<String, Integer>();
-		primeMap.put(AxiomGCI0.class.toString(), 2);
-		primeMap.put(AxiomGCI1.class.toString(), 3);
-		primeMap.put(AxiomGCI2.class.toString(), 5);
-		primeMap.put(AxiomGCI3.class.toString(), 7);
-		primeMap.put(AxiomR.class.toString(), 11);
-		primeMap.put(AxiomRI2.class.toString(), 13);
-		primeMap.put(AxiomRI3.class.toString(), 17);
-		primeMap.put(AxiomS.class.toString(), 19);
-	}
-	
-	public void generate() throws OWLOntologyCreationException, OWLOntologyStorageException{
-		OWLOntologyManager inputOntologyManager = OWLManager.createOWLOntologyManager();
-		OWLOntologyManager outputOntologyManager = OWLManager.createOWLOntologyManager();
-
-		// Load your ontology.
-		OWLOntology ont = inputOntologyManager.loadOntologyFromOntologyDocument(ontoFile);
-
-		// Create an ELK reasoner.
-		OWLReasonerFactory reasonerFactory = new ElkReasonerFactory();
-		OWLReasoner reasoner = reasonerFactory.createReasoner(ont);
-
-		// Classify the ontology.
-		reasoner.precomputeInferences(InferenceType.CLASS_HIERARCHY);
-		// To generate an inferred ontology we use implementations of
-		// inferred axiom generators
-		List<InferredAxiomGenerator<? extends OWLAxiom>> gens = new ArrayList<InferredAxiomGenerator<? extends OWLAxiom>>();
-		gens.add(new InferredSubClassAxiomGenerator());
-		//gens.add(new InferredClassAssertionAxiomGenerator());
-		//gens.add(new InferredEquivalentClassAxiomGenerator());
-
-	
-		OWLDataFactory dataFactory = inputOntologyManager.getOWLDataFactory();
-//		OWLClass newName = dataFactory.getOWLClass(IRI.create("http://www.semanticweb.org/winter/ontologies/2015/4/untitled-ontology-11#D"));
-//		
-//		NodeSet<OWLClass> reSet = reasoner.getSubClasses(newName, true);
-//		Iterator<Node<OWLClass>> tt = reSet.iterator();
-//		while (tt.hasNext()) {
-//			System.out.println(tt.next());
-//		}
-		
-		// Put the inferred axioms into a fresh empty ontology.
-		OWLOntology infOnt = outputOntologyManager.createOntology();
-		InferredOntologyGenerator iog = new InferredOntologyGenerator(reasoner, gens);
-		iog.fillOntology(outputOntologyManager, infOnt);
-
-//		outputOntologyManager.saveOntology(infOnt, new OWLFunctionalSyntaxOntologyFormat(), IRI.create((new File("/Users/winter/output.owl").toURI())));
-		
-		// Terminate the worker threads used by the reasoner.
-		reasoner.dispose();
-		
-		
-		Set<OWLAxiom> axioms = infOnt.getAxioms();
-		Iterator<OWLAxiom> iterator = axioms.iterator();
-		
-		while (iterator.hasNext()) {
-			OWLSubClassOfAxiom subAxiom = (OWLSubClassOfAxiom) iterator.next();
-			
-			//System.out.println(subAxiom.getSubClass().asOWLClass());
-			System.out.println(subAxiom);
-			
-			Set<OWLClass> subClassSet = classHierarchyMap.get(subAxiom.getSuperClass().asOWLClass());
-			
-			if (subClassSet == null) {
-				classHierarchyMap.put(subAxiom.getSuperClass().asOWLClass(), new HashSet<OWLClass>());
-			}
-			classHierarchyMap.get(subAxiom.getSuperClass()).add(subAxiom.getSubClass().asOWLClass());
-		}
-		
-		RuleBasedCELReasoner celReasoner = new RuleBasedCELReasoner(ontoFile);
-		celReasoner.doInference();
-		
-		MyAxiomRepository repository = new MyAxiomRepository(celReasoner.getClassGraph(), celReasoner.getRelationSet(), celReasoner.getNormalizedIntegerAxiomSet());
-		repository.createIndex();
-		
-		Map<Integer, OWLClass> classMap = celReasoner.getClassMap();
-		
-		Iterator<Integer> classMapIterator = classMap.keySet().iterator();
-		while (classMapIterator.hasNext()) {
-			Integer keyInteger = classMapIterator.next();
-			System.out.println(keyInteger + " " + classMap.get(keyInteger));
-		}
-		
-		IntegerSubsumerGraph classGragh = repository.getClassGraph();
-		
-		Set<ExplanationRoutine> patternSet = new HashSet<ExplanationRoutine>();
-		
-		Collection<Integer> elements = classGragh.getElements();
-		
-		Iterator<Integer> elementIterator = elements.iterator();
-		
-		Map<Integer, Set<ExplanationRoutine>> expPrimeHashMap = new HashMap<Integer, Set<ExplanationRoutine>>();
-		//System.out.println(elements);
-		System.out.println("\nJustifications:\n");
-		
-		Map<ExplanationRoutine, Integer> resMap = new HashMap<ExplanationRoutine, Integer>();
-		Map<ExplanationRoutine, AxiomS> resSubsumMap = new HashMap<ExplanationRoutine, AxiomS>();
-		
-		while (elementIterator.hasNext()) {
-			Integer curElement = elementIterator.next();
-			/*
-			 *  skip "owl:thing" and "owl:nothing"
-			 */
-			if (curElement == 0 || curElement == 1) continue; 
-			Collection<Integer> superCollection = classGragh.getSubsumers(curElement);
-			
-			//System.out.println(curElement + "\n" + superCollection + "\n");
-			Iterator<Integer> superIterator = superCollection.iterator();
-			
-			
-			while (superIterator.hasNext()) {
-				Integer superInteger = superIterator.next();
-				
-				/*
-				 *  skip pattern like "A[=A"
-				 */
-				if(superInteger == curElement) continue;
-				
-				if (superInteger == 0 || superInteger == 1) continue; 
-				
-				System.out.println(curElement + " SubClassOf " + superInteger);
-
-				Set<ExplanationRoutine> tempSet = getJustification(repository, curElement, superInteger);
-				
-				Iterator<ExplanationRoutine> subsumIterator = tempSet.iterator();
-				
-				while(subsumIterator.hasNext()){
-					// Compare to the existing patterns
-					ExplanationRoutine curExplanationRoutine = subsumIterator.next();
-					System.out.println(curExplanationRoutine);
-
-					Iterator<ExplanationRoutine> resMapIterator = resMap.keySet().iterator();
-					
-					boolean newPattern = true;
-					
-					while (resMapIterator.hasNext()) {
-						ExplanationRoutine tmpExplanationRoutine = resMapIterator.next();
-						if (isExplanationRoutineEqual(tmpExplanationRoutine, curExplanationRoutine)) {
-							resMap.put(tmpExplanationRoutine, resMap.get(tmpExplanationRoutine)+1);
-							newPattern = false;
-							break;
-						}
-					}
-					
-					if (newPattern) {
-						resMap.put(curExplanationRoutine, 1);
-						AxiomS tempAxiomS = new AxiomS(curElement, superInteger);
-						resSubsumMap.put(curExplanationRoutine, tempAxiomS);
-					}
-					//System.out.println(curExplanationRoutine);
-				}
-				
-				try {
-					FileWriter writer = new FileWriter(outputFile, false);
-					Iterator<ExplanationRoutine> resMapIterator = resMap.keySet().iterator();
-					//writer.write(curElement + " " + superInteger + "\n");
-					while (resMapIterator.hasNext()) {
-						
-						ExplanationRoutine mapKey = resMapIterator.next();
-						
-						//System.out.println();
-						
-						writer.write(resSubsumMap.get(mapKey).getSubClass() + " " + resSubsumMap.get(mapKey).getSuperClass() + "\n");
-						
-						writer.write(mapKey + ": " + resMap.get(mapKey) + "\n");
-					}
-					writer.close();
-				} catch (Exception e) {
-					// TODO: handle exception
-					e.printStackTrace();
-				}
-				
-				System.out.print("\n");
-				
-				//patternSet.addAll(tempSet);
-			}
-		}
-		
-//		System.out.println("\nCandidate patterns:\n");
-//		Iterator patternIterator = patternSet.iterator();
-//		while (patternIterator.hasNext()) {
-//			ExplanationRoutine exp = (ExplanationRoutine) patternIterator.next();
-//			//System.out.println(exp.getClass().toString());
-//			System.out.println(exp + "\n");
-//			
-//		}
-		
-		/*
-		 *  ExplanationRoutine: candidate pattern
-		 *  Integer: pattern count
-		 */
-//		Map<ExplanationRoutine, Integer> resMap = new HashMap<ExplanationRoutine, Integer>();
-//		
-//		List<ExplanationRoutine> pattenList = new ArrayList<ExplanationRoutine>(patternSet);
-//		
-//		for (int i = 0; i < pattenList.size(); i++) {
-//			for (int j = i+1; j < pattenList.size(); j++) {
-//				System.out.println("Comparing " + i + " " + j + " (" + pattenList.size()+ ") "+ ":\n" + pattenList.get(i) + "\n" + pattenList.get(j) );
-//				if (this.isExplanationRoutineEqual(pattenList.get(i), pattenList.get(j))) {
-//					System.out.println("Equal\n");
-//					if (resMap.containsKey(pattenList.get(i))) {
-//						resMap.put(pattenList.get(i), resMap.get(pattenList.get(i))+1);
+public class PatternDiagnosis {
+        private Set<MyAxiom> patternAxioms;
+        private AxiomGCI0 observation;
+        private File ontFile;
+        private AxiomS subsumAxiomS;
+        private PrintStream tt;
+        
+        public PatternDiagnosis(File ontFile, AxiomGCI0 observation, Set<MyAxiom> patternAxioms, AxiomS subsumAxiomS) {
+                // TODO Auto-generated constructor stub
+                this.ontFile = ontFile;
+                this.observation = observation;
+                this.patternAxioms = patternAxioms;
+                this.subsumAxiomS = subsumAxiomS;
+                this.tt = System.out;
+        }
+        
+        public void generate() throws OWLOntologyCreationException{
+//              Set<String> elementDomainSet = new HashSet<String>();
+//              OWLOntologyManager inputOntologyManager = OWLManager.createOWLOntologyManager();
+//              OWLOntologyManager outputOntologyManager = OWLManager.createOWLOntologyManager();
 //
-//						pattenList.remove(j);
-//						j = j - 1;
-//					}else {
-//						resMap.put(pattenList.get(i), 2);
-//						pattenList.remove(j);
-//						j = j - 1;
-//					}
-//				}else {
-//					System.out.println("Not equal:\n");
-//					if (!resMap.containsKey(pattenList.get(i))) {
-//						resMap.put(pattenList.get(i), 1);
-//					}
-//					
-//				}
-//				
-//			}
-//		}
-//		
-//		/*
-//		 * Do not miss the last element
-//		 * 
-//		 */
-//		if (!resMap.containsKey(pattenList.get(pattenList.size()-1))) {
-//			resMap.put(pattenList.get(pattenList.size()-1), 1);
-//		}
-		
-		//System.out.println("\nResult pattern supports:");
-		
-//		try {
-//			FileWriter writer = new FileWriter(outputFile, true);
-//			Iterator<ExplanationRoutine> resMapIterator = resMap.keySet().iterator();
-//			while (resMapIterator.hasNext()) {
-//				ExplanationRoutine mapKey = resMapIterator.next();
-//				
-//				//System.out.println();
-//				
-//				writer.write(mapKey + ": " + resMap.get(mapKey) + "\n");
-//			}
-//			writer.close();
-//		} catch (Exception e) {
-//			// TODO: handle exception
-//			e.printStackTrace();
-//		}
-		
-	}
-	
-	public Set<ExplanationRoutine> getJustification(MyAxiomRepository repository, Integer subClass, Integer superClass){
-		MasterRoutine masterRoutine = new MasterRoutine(repository, 1, subClass, superClass);
-		
-		masterRoutine.computeResult();
-		
-		Set<ExplanationRoutine> justifications = masterRoutine.getJustifications();
-		
-		return justifications;
-	}
-	
-	public boolean isExplanationRoutineEqual(ExplanationRoutine a, ExplanationRoutine b){
-		
-		List<Integer> patternAList = new ArrayList<Integer>(a.getOriginalAxioms());
-		List<Integer> patternBList = new ArrayList<Integer>(b.getOriginalAxioms());
-		
-		if (patternAList.size() != patternBList.size()) return false;
-		
-		Map<String, Set<Integer>> axiomTypeMapA = new HashMap<String, Set<Integer>>();
-		Map<String, Set<Integer>> axiomTypeMapB = new HashMap<String, Set<Integer>>();
-		
-		MasterRoutine mrA = a.getMasterRoutine();
-		MasterRoutine mrB = b.getMasterRoutine();
-		
-		Set<Integer> domainAIntegers = new HashSet<Integer>();
-		Set<Integer> domainBIntegers = new HashSet<Integer>();
-		
-		for(Integer axiomID : patternAList){
-			MyAxiom axiom = mrA.getRecorder().getAxiomFromId(axiomID);
-			domainAIntegers.addAll(axiom.getDomainElementSet());
-			
-			String className = axiom.getClass().toString();
-			
-			if(axiomTypeMapA.containsKey(className)) axiomTypeMapA.get(className).add(axiomID);
-			else{
-				axiomTypeMapA.put(className, new HashSet<Integer>());
-				axiomTypeMapA.get(className).add(axiomID);
-			}
-		}
-		
-		for(Integer axiomID : patternBList){
-			MyAxiom axiom = mrB.getRecorder().getAxiomFromId(axiomID);
-			domainBIntegers.addAll(axiom.getDomainElementSet());
-			
-			String className = axiom.getClass().toString();
-			
-			if(axiomTypeMapB.containsKey(className)) axiomTypeMapB.get(className).add(axiomID);
-			else{
-				axiomTypeMapB.put(className, new HashSet<Integer>());
-				axiomTypeMapB.get(className).add(axiomID);
-			}
-		}
-		
-		/* key set compare */
-		if (!axiomTypeMapA.keySet().equals(axiomTypeMapB.keySet())) return false;
-		
-		/* value size compare */
-		Iterator<String> keyIterator = axiomTypeMapA.keySet().iterator();
-		
-		while(keyIterator.hasNext()){
-			String curKey = keyIterator.next();
-			if (axiomTypeMapA.get(curKey).size() != axiomTypeMapB.get(curKey).size()) return false;
-		}
-		
-		/* element domain complare */
-		if (domainAIntegers.size() != domainBIntegers.size()) return false;
-		
-		List<Integer> domainAList = new ArrayList<Integer>(domainAIntegers);
-		List<Integer> domainBList = new ArrayList<Integer>(domainBIntegers);
-		
-		SimilarPattern similarPattern = new SimilarPattern();
-		similarPattern.domainAList = domainAList;
-		similarPattern.domainBList = domainBList;
-		similarPattern.axiomTypeMapA = axiomTypeMapA;
-		similarPattern.axiomTypeMapB = axiomTypeMapB;
-		similarPattern.masterRoutineA = a.getMasterRoutine();
-		similarPattern.masterRoutineB = b.getMasterRoutine();
-		
-		
-		//return domainPermutation(0, similarPattern);
-		return true;
-	}
-	
-	
-	private boolean domainPermutation(int cur, SimilarPattern similarPattern){
-		
-		if(cur >= similarPattern.domainAList.size()){
-			Map<Integer, Integer> elementMap = new HashMap<Integer, Integer>();
-			
-			for (int i = 0; i < similarPattern.domainAList.size(); i++) {
-				elementMap.put(similarPattern.domainBList.get(i), similarPattern.domainAList.get(i));
-			}
-			
-			Iterator<String> axiomTypeMapIterator = similarPattern.axiomTypeMapA.keySet().iterator();
-			while (axiomTypeMapIterator.hasNext()) {
-				String className = axiomTypeMapIterator.next();
-				Set<Integer> similarAxiomsA = similarPattern.axiomTypeMapA.get(className);
-				Set<Integer> similarAxiomsB = similarPattern.axiomTypeMapB.get(className);
-				
-				List<MyAxiom> axiomAList = new ArrayList<MyAxiom>();				
-				Iterator<Integer> saIterator = similarAxiomsA.iterator();
-				
-				while (saIterator.hasNext()) {
-					Integer axiomID = saIterator.next();
-					axiomAList.add(similarPattern.masterRoutineA.getRecorder().getAxiomFromId(axiomID));
-				}
-				
-				List<MyAxiom> axiomBList = new ArrayList<MyAxiom>();
-				saIterator = similarAxiomsB.iterator();
-				
-				while (saIterator.hasNext()) {
-					Integer axiomID = saIterator.next();
-					MyAxiom originalAxiom = similarPattern.masterRoutineB.getRecorder().getAxiomFromId(axiomID);
-					
-					if (originalAxiom instanceof AxiomGCI0) {
-						AxiomGCI0 axiomGCI0 = (AxiomGCI0) originalAxiom;
-						Integer subInteger = elementMap.get(axiomGCI0.getSubClass());
-						Integer supInteger = elementMap.get(axiomGCI0.getSuperClass());
-						
-						AxiomGCI0 mapAxiomGCI0 = new AxiomGCI0(subInteger, supInteger);
-						axiomBList.add(mapAxiomGCI0);
-					}else if (originalAxiom instanceof AxiomGCI1) {
-						AxiomGCI1 axiomGCI1 = (AxiomGCI1) originalAxiom;
-						Integer sublInteger = elementMap.get(axiomGCI1.getLeftSubClass());
-						Integer subrInteger = elementMap.get(axiomGCI1.getRightSubClass());
-						Integer supInteger = elementMap.get(axiomGCI1.getSuperClass());
-						
-						AxiomGCI1 mapAxiomGCI1 = new AxiomGCI1(sublInteger, subrInteger, supInteger);
-						axiomBList.add(mapAxiomGCI1);
-					}else if (originalAxiom instanceof AxiomGCI2) {
-						AxiomGCI2 axiomGCI2 = (AxiomGCI2) originalAxiom;
-						Integer subInteger = elementMap.get(axiomGCI2.getSubClass());
-						Integer propInteger = elementMap.get(axiomGCI2.getPropertyInSuperClass());
-						Integer supInteger = elementMap.get(axiomGCI2.getClassInSuperClass());
-						
-						AxiomGCI2 mapAxiomGCI2 = new AxiomGCI2(subInteger, propInteger, supInteger);
-						axiomBList.add(mapAxiomGCI2);
-					}else if (originalAxiom instanceof AxiomGCI3) {
-						AxiomGCI3 axiomGCI3 = (AxiomGCI3) originalAxiom;
-						Integer subInteger = elementMap.get(axiomGCI3.getClassInSubClass());
-						Integer propInteger = elementMap.get(axiomGCI3.getPropertyInSubClass());
-						Integer supInteger = elementMap.get(axiomGCI3.getSuperClass());
-						
-						AxiomGCI3 mapAxiomGCI3 = new AxiomGCI3(propInteger, subInteger, supInteger);
-						axiomBList.add(mapAxiomGCI3);
-					}else if (originalAxiom instanceof AxiomR) {
-						AxiomR axiomR = (AxiomR) originalAxiom;
-						Integer subInteger = elementMap.get(axiomR.getSubClass());
-						Integer propInteger = elementMap.get(axiomR.getPropertyInSuperClass());
-						Integer supInteger = elementMap.get(axiomR.getClassInSuperClass());
-						
-						AxiomR mapAxiomR = new AxiomR(subInteger, propInteger, supInteger);
-						axiomBList.add(mapAxiomR);
-					}else if (originalAxiom instanceof AxiomRI2) {
-						AxiomRI2 axiomRI2 = (AxiomRI2) originalAxiom;
-						Integer subPropInteger = elementMap.get(axiomRI2.getSubProperty());
-						Integer supPropInteger = elementMap.get(axiomRI2.getSuperProperty());
-						
-						AxiomRI2 mapAxiomRI2 = new AxiomRI2(subPropInteger, supPropInteger);
-						axiomBList.add(mapAxiomRI2);
-					}else if (originalAxiom instanceof AxiomRI3){
-						AxiomRI3 axiomRI3 = (AxiomRI3) originalAxiom;
-						Integer sublPropInteger = elementMap.get(axiomRI3.getLeftSubProperty());
-						Integer subrPropInteger = elementMap.get(axiomRI3.getRightSubProperty());
-						Integer supPropInteger = elementMap.get(axiomRI3.getSuperProperty());
-						
-						AxiomRI3 mapAxiomRI3 = new AxiomRI3(sublPropInteger, subrPropInteger, supPropInteger);
-						axiomBList.add(mapAxiomRI3);
-					}else if (originalAxiom instanceof AxiomS) {
-						AxiomS axiomS = (AxiomS) originalAxiom;
-						Integer subInteger = elementMap.get(axiomS.getSubClass());
-						Integer supInteger = elementMap.get(axiomS.getSuperClass());
-						
-						AxiomS mapAxiomS = new AxiomS(subInteger, supInteger);
-						axiomBList.add(mapAxiomS);
-					}
-					
-				}
-				
-				boolean res = this.axiomMapPermutation(0, axiomAList, axiomBList);
-				
-				
-			}
-			
-			return true;
-		}else{
-			for(int i = cur; i < similarPattern.domainBList.size(); i++){
-				Integer temp = similarPattern.domainBList.get(i);
-				similarPattern.domainBList.set(i, similarPattern.domainBList.get(cur));
-				similarPattern.domainBList.set(cur, temp);
-				
-				boolean tempRes = domainPermutation(cur+1, similarPattern);
-				
-				if (tempRes) return true;
-				
-				temp = similarPattern.domainBList.get(i);
-				similarPattern.domainBList.set(i, similarPattern.domainBList.get(cur));
-				similarPattern.domainBList.set(cur, temp);
+//              File ontoFile = new File("ontology/owltest.owl");
+//              // Load your ontology.
+//              OWLOntology ont = inputOntologyManager.loadOntologyFromOntologyDocument(ontoFile);
+//              Set<OWLAxiom> axiomSet = ont.getAxioms();
+//              //tt.println(axiomSet);
+//              
+//              Iterator<OWLAxiom> it = axiomSet.iterator();
+//              
+//              OWLSubClassOfAxiom axiom = (OWLSubClassOfAxiom)it.next();
+//              OWLObjectIntersectionOf obAxiom = (OWLObjectIntersectionOf) axiom.getSubClass();
+//              tt.println(obAxiom.getOperands());
+//              tt.println(axiom.getSuperClass());
+//
+//              //tt.println(axiom.getNestedClassExpressions());
+//              Set<OWLClassExpression> tmpClassExpression =  axiom.getNestedClassExpressions();
+                
+//              tt.println("\nexpression begin:");
+//              Iterator<OWLClassExpression> iterator = tmpClassExpression.iterator();
+//              while (iterator.hasNext()) {
+//                      OWLClassExpression tmp = iterator.next();
+//                      tt.println();
+//              }
+//              tt.println("expression end:\n");
 
-			}
-		}
-		
-		return false;
-	}
-	
-	private boolean axiomMapPermutation(int cur, List<MyAxiom> axiomAList, List<MyAxiom> axiomBList){
-		
-		if(cur >= axiomAList.size()){
-			for (int i = 0; i < axiomAList.size(); i++) {
-				if (!axiomAList.get(i).toString().equals(axiomBList.get(i).toString())) return false;
-			}
-			
-			return true;
-		}else{
-			for (int i = cur; i < axiomAList.size(); i++) {
-				MyAxiom axiomTemp = axiomBList.get(i);
-				axiomBList.set(i, axiomBList.get(cur));
-				axiomBList.set(cur, axiomTemp);
-				
-				boolean tempRes = axiomMapPermutation(cur+1, axiomAList, axiomBList);
-				
-				if (tempRes) return true;
-				
-				axiomTemp = axiomAList.get(i);
-				axiomBList.set(i, axiomBList.get(cur));
-				axiomBList.set(cur, axiomTemp);
-			}
-		}
-		return false;
-	}
+                //tt.println(axiomSet);
+                RuleBasedCELReasoner celReasoner = new RuleBasedCELReasoner(this.ontFile);
+                
+                Set<NormalizedIntegerAxiom> tAxiom = celReasoner.getNormalizedIntegerAxiomSet();
+                Set<Integer> tboxClassDomainSet = new HashSet<Integer>();
+                Set<Integer> tboxPropertyDomainSet = new HashSet<Integer>(); 
+                
+                Iterator<NormalizedIntegerAxiom> iterator = tAxiom.iterator();
+                while (iterator.hasNext()) {
+                        NormalizedIntegerAxiom tmpAxiom = iterator.next();
+                        
+                        if (tmpAxiom instanceof GCI0Axiom) {
+                                GCI0Axiom temp = (GCI0Axiom)tmpAxiom;
+                                tboxClassDomainSet.add(temp.getSubClass());
+                                tboxClassDomainSet.add(temp.getSuperClass());
+                        }else if (tmpAxiom instanceof GCI1Axiom) {
+                                GCI1Axiom temp = (GCI1Axiom)tmpAxiom;
+                                tboxClassDomainSet.add(temp.getLeftSubClass());
+                                tboxClassDomainSet.add(temp.getRightSubClass());
+                                tboxClassDomainSet.add(temp.getSuperClass());
+                        }else if (tmpAxiom instanceof GCI2Axiom) {
+                                GCI2Axiom temp = (GCI2Axiom)tmpAxiom;
+                                tboxClassDomainSet.add(temp.getSubClass());
+                                tboxClassDomainSet.add(temp.getClassInSuperClass());
+                                tboxPropertyDomainSet.add(temp.getPropertyInSuperClass());
+                                
+                        }else if (tmpAxiom instanceof GCI3Axiom) {
+                                GCI3Axiom temp = (GCI3Axiom)tmpAxiom;
+                                tboxClassDomainSet.add(temp.getClassInSubClass());
+                                tboxClassDomainSet.add(temp.getSuperClass());
+                                tboxPropertyDomainSet.add(temp.getPropertyInSubClass());
+                        }else if (tmpAxiom instanceof RI1Axiom) {
+                                RI1Axiom temp = (RI1Axiom)tmpAxiom;
+                                tboxPropertyDomainSet.add(temp.getSuperProperty());
+                        }else if (tmpAxiom instanceof RI2Axiom) {
+                                RI2Axiom temp = (RI2Axiom)tmpAxiom;
+                                tboxPropertyDomainSet.add(temp.getSubProperty());
+                                tboxPropertyDomainSet.add(temp.getSuperProperty());
+                        }else if (tmpAxiom instanceof RI3Axiom) {
+                                RI3Axiom temp = (RI3Axiom)tmpAxiom;
+                                tboxPropertyDomainSet.add(temp.getLeftSubProperty());
+                                tboxPropertyDomainSet.add(temp.getRightSubProperty());
+                                tboxPropertyDomainSet.add(temp.getSuperProperty());
+                                
+                        }else if (tmpAxiom instanceof RangeAxiom) {
+                                RangeAxiom temp = (RangeAxiom)tmpAxiom;
+                                tboxPropertyDomainSet.add(temp.getProperty());
+                                tboxPropertyDomainSet.add(temp.getRange());
+                        }
+                        
+                
+                        //elementDomain.addAll(tmpAxiom.getDomainElementSet());
+                }
+                
+                tboxClassDomainSet.add(observation.getSubClass());
+                tboxClassDomainSet.add(observation.getSuperClass());
+                
+                Set<Integer> patternClassDomainSet = new HashSet<Integer>();
+                Set<Integer> patternPropertyDomainSet = new HashSet<Integer>();
+                
+                Iterator<MyAxiom> myAxiomIterator = patternAxioms.iterator();
+                
+                while(myAxiomIterator.hasNext()){
+                	MyAxiom curAxiom = myAxiomIterator.next();
+                	
+                	if (curAxiom instanceof AxiomS) {
+						AxiomS tmpAxiomS = (AxiomS) curAxiom;
+						patternClassDomainSet.add(tmpAxiomS.getSubClass());
+						patternClassDomainSet.add(tmpAxiomS.getSuperClass());
+					}else if (curAxiom instanceof AxiomGCI0) {
+						AxiomGCI0 tmpAxiomGCI0 = (AxiomGCI0) curAxiom;
+						patternClassDomainSet.add(tmpAxiomGCI0.getSubClass());
+						patternClassDomainSet.add(tmpAxiomGCI0.getSuperClass());
+					}else if (curAxiom instanceof AxiomGCI1) {
+						AxiomGCI1 tmpAxiomGCI1 = (AxiomGCI1) curAxiom;
+						patternClassDomainSet.add(tmpAxiomGCI1.getLeftSubClass());
+						patternClassDomainSet.add(tmpAxiomGCI1.getRightSubClass());
+						patternClassDomainSet.add(tmpAxiomGCI1.getSuperClass());
+					}else if (curAxiom instanceof AxiomGCI2) {
+						AxiomGCI2 tmpAxiomGCI2 = (AxiomGCI2) curAxiom;
+						patternClassDomainSet.add(tmpAxiomGCI2.getSubClass());
+						patternClassDomainSet.add(tmpAxiomGCI2.getClassInSuperClass());
+						patternPropertyDomainSet.add(tmpAxiomGCI2.getPropertyInSuperClass());
+					}else if (curAxiom instanceof AxiomGCI3) {
+						AxiomGCI3 tmpAxiomGCI3 = (AxiomGCI3) curAxiom;
+						patternClassDomainSet.add(tmpAxiomGCI3.getClassInSubClass());
+						patternPropertyDomainSet.add(tmpAxiomGCI3.getPropertyInSubClass());
+						patternClassDomainSet.add(tmpAxiomGCI3.getSuperClass());
+					}else if (curAxiom instanceof AxiomR) {
+						AxiomR tmpAxiomR = (AxiomR) curAxiom;
+						patternClassDomainSet.add(tmpAxiomR.getSubClass());
+						patternPropertyDomainSet.add(tmpAxiomR.getPropertyInSuperClass());
+						patternClassDomainSet.add(tmpAxiomR.getClassInSuperClass());
+					}else if (curAxiom instanceof AxiomRI2) {
+						AxiomRI2 tmpAxiomRI2 = (AxiomRI2) curAxiom;
+						patternPropertyDomainSet.add(tmpAxiomRI2.getSubProperty());
+						patternPropertyDomainSet.add(tmpAxiomRI2.getSuperProperty());
+					}
+                }
+                
+                
+                
+                //先添加父类元素以及子类元素的映射
+                Map<Integer, Integer> classElementMap = new HashMap<Integer, Integer>();
+                Map<Integer, Integer> propertyElementMap = new HashMap<Integer, Integer>();
+                
+                classElementMap.put(subsumAxiomS.getSubClass(), observation.getSubClass());
+                classElementMap.put(subsumAxiomS.getSuperClass(), observation.getSubClass());
+                
+                tboxClassDomainSet.remove(observation.getSubClass());
+                tboxClassDomainSet.remove(observation.getSuperClass());
+                
+                patternClassDomainSet.remove(subsumAxiomS.getSubClass());
+                patternClassDomainSet.remove(subsumAxiomS.getSuperClass());
+                
+                //转化成List进行枚举
+                ArrayList<Integer> tboxClassDomainList = new ArrayList<Integer>(tboxClassDomainSet);
+                ArrayList<Integer> tboxPropertyDomainList = new ArrayList<Integer>(tboxPropertyDomainSet);
+                
+                ArrayList<Integer> patternClassDomainList = new ArrayList<Integer>(patternClassDomainSet);
+                ArrayList<Integer> patternPropertyDomainList = new ArrayList<Integer>(patternPropertyDomainSet);
+                
+                
+                //处理pattern的元素比tbox元素要多的情况
+                
+                if (tboxClassDomainSet.size() < patternClassDomainSet.size() || tboxPropertyDomainSet.size() < patternPropertyDomainList.size()) {
+					//TODO
+                	
+				}
+                
+                Integer patternClassSizeInteger = patternClassDomainSet.size();
+                Integer patternPropertySizeInteger = patternPropertyDomainSet.size();
+                
+                ElementData elementData = new ElementData();
+                elementData.classMap = classElementMap;
+                elementData.propertyMap = propertyElementMap;
+                elementData.tboxClassDomainList = tboxClassDomainList;
+                elementData.tboxPropertyDomainList = tboxPropertyDomainList;
+                elementData.patternClassDomainList = patternClassDomainList;
+                elementData.patternPropertyDomainList = patternPropertyDomainList;
+                
+                //classDomainPermutation(0, );
+        }
+        
+        private void classDomainPermutation(Integer cur){
+        	
+        }
+        
+        private void propertyDomainPermutation(Integer cur){
+        	
+        }
 }
 
-class SimilarPattern{
-	public MasterRoutine masterRoutineA;
-	public MasterRoutine masterRoutineB;
-
-	public List<Integer> domainAList;
-	public List<Integer> domainBList;
+class ElementData{
+	public List<Integer> tboxClassDomainList;
+	public List<Integer> tboxPropertyDomainList;
+	public List<Integer> patternClassDomainList;
+	public List<Integer> patternPropertyDomainList;
 	
-	public Map<Integer, Integer> elementMap;
-	public Map<String, Set<Integer>> axiomTypeMapA;
-	public Map<String, Set<Integer>> axiomTypeMapB;
+	public Map< Integer, Integer> classMap;
+	public Map<Integer, Integer> propertyMap;
 }
