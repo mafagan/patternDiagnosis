@@ -37,8 +37,6 @@ import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLDataFactory;
-import org.semanticweb.owlapi.model.OWLObject;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
@@ -53,7 +51,6 @@ import org.semanticweb.owlapi.util.InferredSubClassAxiomGenerator;
 
 
 import de.tudresden.inf.lat.jcel.core.graph.IntegerSubsumerGraph;
-import de.tudresden.inf.lat.jcel.coreontology.axiom.NormalizedIntegerAxiom;
 
 public class SubsumptionPatternGenerater {
 	
@@ -165,6 +162,7 @@ public class SubsumptionPatternGenerater {
 		System.out.println("\nJustifications:\n");
 		
 		Map<ExplanationRoutine, Integer> resMap = new HashMap<ExplanationRoutine, Integer>();
+		Map<ExplanationRoutine, AxiomS> resSubsumMap = new HashMap<ExplanationRoutine, AxiomS>();
 		
 		while (elementIterator.hasNext()) {
 			Integer curElement = elementIterator.next();
@@ -197,7 +195,8 @@ public class SubsumptionPatternGenerater {
 				while(subsumIterator.hasNext()){
 					// Compare to the existing patterns
 					ExplanationRoutine curExplanationRoutine = subsumIterator.next();
-					
+					System.out.println(curExplanationRoutine);
+
 					Iterator<ExplanationRoutine> resMapIterator = resMap.keySet().iterator();
 					
 					boolean newPattern = true;
@@ -213,17 +212,23 @@ public class SubsumptionPatternGenerater {
 					
 					if (newPattern) {
 						resMap.put(curExplanationRoutine, 1);
+						AxiomS tempAxiomS = new AxiomS(curElement, superInteger);
+						resSubsumMap.put(curExplanationRoutine, tempAxiomS);
 					}
-					System.out.println(curExplanationRoutine);
+					//System.out.println(curExplanationRoutine);
 				}
 				
 				try {
 					FileWriter writer = new FileWriter(outputFile, false);
 					Iterator<ExplanationRoutine> resMapIterator = resMap.keySet().iterator();
+					//writer.write(curElement + " " + superInteger + "\n");
 					while (resMapIterator.hasNext()) {
+						
 						ExplanationRoutine mapKey = resMapIterator.next();
 						
 						//System.out.println();
+						
+						writer.write(resSubsumMap.get(mapKey).getSubClass() + " " + resSubsumMap.get(mapKey).getSuperClass() + "\n");
 						
 						writer.write(mapKey + ": " + resMap.get(mapKey) + "\n");
 					}
@@ -388,8 +393,8 @@ public class SubsumptionPatternGenerater {
 		similarPattern.masterRoutineB = b.getMasterRoutine();
 		
 		
-		return domainPermutation(0, similarPattern);
-		
+		//return domainPermutation(0, similarPattern);
+		return true;
 	}
 	
 	
@@ -538,40 +543,6 @@ public class SubsumptionPatternGenerater {
 			}
 		}
 		return false;
-	}
-	
-	public void nomalizeTest(){
-		RuleBasedCELReasoner celReasoner = new RuleBasedCELReasoner(ontoFile);
-		celReasoner.doInference();
-		
-		Map<Integer, OWLClass> classMap = celReasoner.getClassMap();
-		Map<Integer, OWLObjectProperty> propMap = celReasoner.getObjectPropertyMap();
-		
-		Iterator<Integer> classMapIterator = classMap.keySet().iterator();
-		while (classMapIterator.hasNext()) {
-			Integer keyInteger = classMapIterator.next();
-			System.out.println(keyInteger + " " + classMap.get(keyInteger));
-		}
-		
-		Iterator<Integer> propMapIterator = propMap.keySet().iterator();
-		while (propMapIterator.hasNext()) {
-			Integer keyInteger = propMapIterator.next();
-			System.out.println(keyInteger + " " + propMap.get(keyInteger));
-
-		}
-		MyAxiomRepository repository = new MyAxiomRepository(celReasoner.getClassGraph(), celReasoner.getRelationSet(), celReasoner.getNormalizedIntegerAxiomSet());
-		repository.createIndex();
-		
-		Set<ExplanationRoutine> tempSet = getJustification(repository, 7, 9);
-		System.out.println("\n" + tempSet + "\n");
-		
-//		System.out.print(celReasoner.getNormalizedIntegerAxiomSet());
-		Set<NormalizedIntegerAxiom> tAxiom = celReasoner.getNormalizedIntegerAxiomSet();
-		Iterator<NormalizedIntegerAxiom> iterator = tAxiom.iterator();
-		
-		while (iterator.hasNext()) {
-			System.out.println(iterator.next());
-		}
 	}
 }
 
